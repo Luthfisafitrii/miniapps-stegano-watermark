@@ -5,23 +5,27 @@ import io
 
 # FUNGSI STEGANOGRAFI LSB
 def encode_message(img, message):
-    message += "<END>"
-    binary_msg = ''.join(format(ord(char), '08b') for char in message)
+    message += "<END>"  # penanda akhir pesan
+    binary_msg = ''.join(format(ord(c), '08b') for c in message)
 
-    img_arr = np.array(img)
+    # Pastikan gambar RGB
+    img = img.convert("RGB")
+    img_arr = np.array(img, dtype=np.uint8)
     flat = img_arr.flatten()
 
     if len(binary_msg) > len(flat):
-        raise ValueError("Pesan terlalu panjang!")
+        raise ValueError("Pesan terlalu panjang untuk gambar ini!")
 
     for i in range(len(binary_msg)):
-        flat[i] = (flat[i] & ~1) | int(binary_msg[i])
+        # LSB safe: pastikan tetap uint8
+        flat[i] = np.uint8((flat[i] & 0b11111110) | int(binary_msg[i]))
 
     encoded = flat.reshape(img_arr.shape)
-    return Image.fromarray(encoded.astype(np.uint8))
+    return Image.fromarray(encoded, 'RGB')
 
 def decode_message(img):
-    img_arr = np.array(img)
+    img = img.convert("RGB")
+    img_arr = np.array(img, dtype=np.uint8)
     flat = img_arr.flatten()
 
     bits = [str(pixel & 1) for pixel in flat]
