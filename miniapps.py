@@ -45,15 +45,20 @@ def decode_message(img):
 
 # FUNGSI WATERMARK
 def apply_watermark(image, text, font_size, color, position):
-    img = image.copy()
-    draw = ImageDraw.Draw(img)
+    # Copy gambar asli dan pastikan mode RGBA
+    img = image.copy().convert("RGBA")
 
+    # Layer transparan untuk watermark
+    txt_layer = Image.new("RGBA", img.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(txt_layer)
+
+    # Coba pakai arial, fallback DejaVuSans
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
     except:
-        font = ImageFont.load_default()
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
 
-    # Hitung ukuran teks dengan textbbox
+    # Hitung ukuran teks
     bbox = draw.textbbox((0, 0), text, font=font)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
@@ -68,8 +73,14 @@ def apply_watermark(image, text, font_size, color, position):
     else:  # Bottom-Right
         pos = (img.width - text_w - 10, img.height - text_h - 10)
 
-    draw.text(pos, text, fill=color, font=font)
-    return img
+    # Draw watermark di layer transparan
+    draw.text(pos, text, font=font, fill=color)
+
+    # Gabungkan layer watermark dengan gambar asli
+    watermarked = Image.alpha_composite(img, txt_layer)
+
+    # Kembali ke RGB supaya bisa disimpan di PNG/JPG
+    return watermarked.convert("RGB")
 
 
 # STREAMLIT MINI APP
